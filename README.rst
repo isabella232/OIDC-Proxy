@@ -41,6 +41,8 @@ Development Tools
 Required Equipment
 -------------------
 
+* For Android development: a `compatible android device`_
+
 .. _`compatible android device`: https://code.google.com/p/seek-for-android/wiki/Devices
 
 
