@@ -58,7 +58,9 @@ For the OIDC server, follow the steps described in `the phpOIDC project`_ and th
 AOP Sequence Diagram
 ====================
 
-.. image:: https://cloud.githubusercontent.com/assets/11352074/6554851/3382fa6a-c660-11e4-9db9-5f2497b8e40a.png
+.. image:: https://cloud.githubusercontent.com/assets/11352074/7454502/82870936-f274-11e4-81e0-32d46c9485a8.png
+
+
 
 
 License
