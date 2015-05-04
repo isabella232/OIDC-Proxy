@@ -1,4 +1,3 @@
-# OIDC-Proxy
 
 ==================================
 Android OpenID Connect Proxy (AOP)
