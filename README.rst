@@ -7,7 +7,7 @@ A local smartphone module acting as an OpenID Connect Server proxy and delivers 
 
 Description
 -----------
-The AOP project is a set of three projects:  an Android service, a client app enabling to test the AOP services, and an OpenID Connect Server.
+The AOP project is a set of three projects:  an Android service (oidc_secure_proxy), a client app (HelloOidcProxy) enabling to test the AOP services, and an OpenID Connect Server (PhpOpSecureProxy).
 The OIDC server is based on an `open source implementation of OpenID Connect in PHP by Nomura Research Institute, Ltd`_.
 
 The AOP receives requests from native applications needing to access user personal data and requests the server to obtain tokens on behalf of the native app. After receiving the tokens the AOP forwards them to the native app which can then use them.
