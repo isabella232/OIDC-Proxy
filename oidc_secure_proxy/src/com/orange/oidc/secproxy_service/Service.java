@@ -18,7 +18,14 @@
 
 package com.orange.oidc.secproxy_service;
 
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.PublicKey;
 import java.security.Security;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -32,6 +39,7 @@ import com.orange.oidc.secproxy_service.IRemoteListenerToken;
 import com.orange.oidc.secproxy_service.IRemoteService;
 import com.orange.oidc.secproxy_service.IRemoteServiceInternal;
 import com.orange.oidc.secproxy_service.R;
+import com.orange.oidc.secproxy_service.MySecureProxy.RsaKeyProxy;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -39,6 +47,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -104,7 +113,7 @@ public class Service extends android.app.Service {
 	private final IRemoteService.Stub mBinder = new IRemoteService.Stub() {
 		
 		@Override
-		public void getTokensWithOidcProxy(
+		public boolean getTokensWithOidcProxy(
 		        IRemoteListenerToken listener,
 		        String serverUrl,
 		        String client_id,
@@ -113,9 +122,17 @@ public class Service extends android.app.Service {
 		        String nonce )
 				throws RemoteException {
 
-			if( serverUrl == null || serverUrl.length()==0 ) {
-				return;
-			}
+			// check access
+			if( !checkCallingSignature() ) return false;
+
+			// check parameters
+			if( 	isEmpty(serverUrl)
+				||	isEmpty(client_id)
+				||	isEmpty(scope)
+				) {
+					// invalid parameters
+					return false;
+				}
 			
 			// android.os.Debug.waitForDebugger();
 
@@ -146,6 +163,8 @@ public class Service extends android.app.Service {
 			}
 
 			Logd(TAG,"getTokensWithOidcProxy end");
+			
+			return true;
 
 		}
 
@@ -154,6 +173,10 @@ public class Service extends android.app.Service {
 	            String userInput,
 	            String serverUrl
 	            ) {
+			// check access
+			if( !checkCallingSignature() ) return null;
+			// check parameters
+			if( isEmpty(serverUrl) || isEmpty(userInput) ) return null;
 			try {
 				return HttpOpenidConnect.webfinger(userInput, serverUrl);
 			} catch (Exception e) {
@@ -166,15 +189,50 @@ public class Service extends android.app.Service {
 		public String getUserInfo(
 			String serverUrl,
 			String access_token ) {
+			// check access
+			if( !checkCallingSignature() ) return null;
+			// check parameters
+			if( isEmpty(serverUrl) || isEmpty(access_token) ) return null;
+			// do the job
 			return HttpOpenidConnect.getUserInfo(serverUrl, access_token);
 		}
 
 		// Logout from the idp
 		@Override
-	    public void logout(String serverUrl) {
-			HttpOpenidConnect.logout(serverUrl);
+	    public boolean logout(String serverUrl) {
+			// check access
+			if( !checkCallingSignature() ) return false;
+			// check parameters
+			if( isEmpty(serverUrl) ) return false;
+			// do the job
+			return HttpOpenidConnect.logout(serverUrl);
 		}
 
+		// check calling process signature, if not valid return false
+		// possibility of hack
+		private boolean checkCallingSignature() {
+			// get package name
+			String pName = getPackageManager().getNameForUid(Binder.getCallingUid());
+			X509Certificate certCalling = PackInfo.getCertificate(Service.this, pName);
+			X509Certificate certProxy   = PackInfo.getCertificate(Service.this, Service.this.getPackageName());
+
+			Logd(TAG, "certCalling : "+pName);
+			Logd(TAG, ""+certCalling.toString());
+			Logd(TAG, "certProxy : "+Service.this.getPackageName());
+			Logd(TAG, ""+certProxy.toString());
+			
+			//certCalling.
+			try {
+				certCalling.verify(RsaKeyRootCA.pubRsaKey);
+			} catch ( Exception e) {
+				Logd(TAG,"checkCallingSignature failed");
+				return false;
+			}
+			
+			// uid are not the same
+			Logd(TAG,"checkCallingSignature success");
+			return true;
+		}
 	};
 
 	void resetCookies() {
@@ -377,8 +435,8 @@ public class Service extends android.app.Service {
 	        // android.webkit.CookieManager.getInstance().removeAllCookie();
 		}
 
-		// check calling process uid, if different return false
-		// possibility of hack
+		// check calling process uid for possibility of hack,
+		// if different from current service uid then return false
 		private boolean checkCallingUid() {
 			// check uid
 			if( android.os.Process.myUid() == Binder.getCallingUid() ) {
@@ -600,4 +658,45 @@ public class Service extends android.app.Service {
 		if(tag!=null && msg!=null) Log.d(tag, msg);
 	}
 
+	// RSA key used by the Secure Proxy
+	// here for demo only, must be stored in a secure element
+	final static class RsaKeyRootCA {
+
+		// RSA 512
+		// static private String _rsaNs = "174534779388221555027193756296996728577785706931882582500865462191276991828908964783626120005370658240337053195460241456112314652761908126414596521509072923990652465127860275450913335454113631551447701718552251290927858625416498836268258006496356478412330739471783248956660708147504866504092613087913865419941";
+        static private String _rsaNs = "137615577516537198807817310937859988960161111436453997102401245051154742289581142838915071683987098078139191437791365924492551201544861234198101701401783768985281927492472872690006772264611369208880786262064142563461367635639697166679608227153800046014276971655300012833498776331150965310640667300049423086361";
+		static private String _rsaEs = "65537";
+
+		static public  PublicKey pubRsaKey;
+	}
+
+	// init the key from the big numbers above
+	static {
+		BigInteger rsaN = null;
+		BigInteger rsaE = null;
+		try {
+			rsaN = new BigInteger(RsaKeyRootCA._rsaNs);
+			rsaE = new BigInteger(RsaKeyRootCA._rsaEs);
+		} catch ( Exception e) {
+			e.printStackTrace();
+		}
+		
+		RSAPublicKeySpec pubRsaSpec = new RSAPublicKeySpec(rsaN, rsaE);
+		RsaKeyRootCA.pubRsaKey = null;
+
+		try {
+			KeyFactory keyfact = KeyFactory.getInstance("RSA","SC");
+			RsaKeyRootCA.pubRsaKey = keyfact.generatePublic(pubRsaSpec);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	// return true is string is null or empty, false otherwise
+    private static boolean isEmpty(String s) {
+    	if(s==null || s.length()==0)
+    		return true;
+    	return false;
+    }
 }

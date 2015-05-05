@@ -1,6 +1,7 @@
 package com.orange.oidc.hello.secure_proxy;
 
 import com.orange.oidc.secproxy_service.IRemoteListenerToken;
+
 import com.orange.oidc.secproxy_service.IRemoteService;
 
 import android.os.Bundle;
@@ -165,6 +166,7 @@ public class MainActivity extends Activity {
 			}
 		});
 
+		
 	}
 
 	// load parameters from shared preferences
@@ -240,7 +242,14 @@ public class MainActivity extends Activity {
 			public void run() {
 				try {
 					if( service!=null ) {
-						service.logout(serverUrl);
+						if( service.logout(serverUrl) == false ) {
+							runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									addToWebview("<font color=\"red\">error logout</font>");
+								}
+							});
+						}
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -298,13 +307,22 @@ public class MainActivity extends Activity {
 					// call the remote service with specified parameters
 					if (service != null) {
 						Log.d(TAG, "doLogin : launch get tokens");
-						service.getTokensWithOidcProxy(
+						if( service.getTokensWithOidcProxy(
 								remoteListenerToken,
 								serverUrl,
 								client_id,
 								scope,
 								state,
-								nonce);
+								nonce) == false ) {
+							runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									// hide progress bar animation
+									pb.setVisibility(View.GONE);
+									addToWebview("<font color=\"red\">error getTokens</font>");
+								}});
+							
+						}
 						Log.d(TAG, "doLogin : waiting tokens");
 					}
 				} catch (final Exception e) {
@@ -313,7 +331,7 @@ public class MainActivity extends Activity {
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							// show progress bar animation
+							// hide progress bar animation
 							pb.setVisibility(View.GONE);
 							addToWebview("<font color=\"red\">"+e.getMessage()+"</font>");
 						}});

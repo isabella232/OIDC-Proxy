@@ -8,7 +8,9 @@
         android:minSdkVersion="8"
         android:targetSdkVersion="18" />
 
-    <uses-permission android:name="com.orange.oidc.secproxy_service.SECURE_PROXY"/>
+    <!--
+        <uses-permission android:name="com.orange.oidc.secproxy_service.SECURE_PROXY"/>
+    -->
 
     <application
         android:allowBackup="true"

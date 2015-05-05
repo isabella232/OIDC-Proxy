@@ -46,8 +46,10 @@ interface IRemoteService {
     *           OPTIONAL. String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
     *           @see <a href="http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest">OpenID Connect Core 1.0 documentation / Auth Request</a>
     *           
+    * @return
+    *           a first status on the operation, false for incorrect parameters or access error
     */
-    void getTokensWithOidcProxy(
+    boolean getTokensWithOidcProxy(
         IRemoteListenerToken listener,
         String serverUrl,
         String client_id,
@@ -66,7 +68,6 @@ interface IRemoteService {
     * @return
     *           the server URL, null if error or not found
     *
-    * if the 
     */
     String webFinger(
         String userInput,
@@ -74,12 +75,31 @@ interface IRemoteService {
         );
 
 
-    // get user info
+
+    /**
+    * getUserInfo returns the userInfo request on an oidc server 
+    * @param serverUrl
+    *           the URL of the resource server
+    * @param access_token
+    *           previously provided access_token
+    * 
+    * @return
+    *           the user info in json format
+    *
+    */
     String getUserInfo(
         String serverUrl,
         String access_token
         );
 
-    // Logout from the server
-    void logout(String serverUrl);
+    /**
+    * logout end session on the server 
+    * @param serverUrl
+    *           the URL of the server
+    * 
+    * @return
+    *           the status on the logout, false if error
+    *
+    */
+    boolean logout(String serverUrl);
 }

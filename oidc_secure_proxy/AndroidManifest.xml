@@ -7,10 +7,12 @@
         android:minSdkVersion="16"
         android:targetSdkVersion="16" />
 
+    <!--
     <permission android:description="@string/permDesc"
         android:label="@string/permLabel"
         android:name="com.orange.oidc.secproxy_service.SECURE_PROXY"
         android:protectionLevel="signature" />
+    -->
     
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_INTERNAL_STORAGE" />
@@ -34,8 +36,8 @@
         </activity>
             
         <service android:name="com.orange.oidc.secproxy_service.Service" android:exported="true" android:process=":remote" 
-            android:permission="com.orange.oidc.secproxy_service.SECURE_PROXY"
              >
+            <!--  android:permission="com.orange.oidc.secproxy_service.SECURE_PROXY"  -->
             <intent-filter>
                 <!-- These are the interfaces supported by the service, which you can bind to. -->
                 <action android:name="com.orange.oidc.secproxy_service.IRemoteService" />
